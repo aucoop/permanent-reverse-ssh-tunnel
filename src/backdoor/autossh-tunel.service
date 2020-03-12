@@ -1,0 +1,47 @@
+[Unit]
+
+Description=AutoSSH tunnel service 
+Documentation=https://github.com/aucoop/origineOAdiadem/
+
+# This will ensure that all configured network devices are up and have an IP address assigned before the
+# service is started. network-online.target will time out after 90s.
+# Enabling this might considerably delay your boot even if the timeout is not reached.
+After=network-online.target ssh.service
+Wants=network-online.target
+
+[Service]
+
+# autossh is a program to start a copy of ssh and monitor it, restarting it as necessary should it die or stop passing traffic.
+# Man page: https://linux.die.net/man/1/autossh
+
+# Flags:
+# * AUTOSSH_GATETIME=0 Equivale a el flag -f
+
+# -M port[:echo_port]
+#   specifies the base monitoring port to use. Without the echo port, this port and the port immediately above it ( port + 1) 
+#   should be something nothing else is using. autossh will send test data on the base monitoring port, and receive it back 
+#   on the port above. For example, if you specify "-M 20000", autossh will set up forwards so that it can send data on port 
+#   20000 and receive it back on 20001.
+#   The echo service may also be something more complicated: perhaps a daemon that monitors a group of ssh tunnels.
+
+#   Setting the monitor port to 0 turns the monitoring function off, and autossh will only restart ssh upon ssh's exit.
+#   For example, if you are using a recent version of OpenSSH, you may wish to explore using the ServerAliveInterval and
+#   ServerAliveCountMax options to have the SSH client exit if it finds itself no longer connected to the server. In many
+#   ways this may be a better solution than the monitoring port.
+
+# * -N : Just establish the tunnel, no command input (no interactive).
+
+# * -o "ExitOnForwardFailure=yes" : f the client cuts the connection to the server (like power goes off), the port may still
+#   be considered in use on the server.
+# * -o "PubkeyAuthentication=yes" -o "PasswordAuthentication=no": Force key exchange authentication, avoiding password auth.
+
+Environment="AUTOSSH_GATETIME=0"
+ExecStart=/usr/bin/autossh -M 0 -N -o "ExitOnForwardFailure=yes" -o "PubkeyAuthentication=yes" -o "PasswordAuthentication=no" -i /home/konte/.ssh/konte_server.key -R 6666:localhost:22 aucoop@147.83.200.187
+
+# Restart every >2 seconds to avoid StartLimitInterval failure
+RestartSec=30
+Restart=always
+User=konte
+[Install]
+WantedBy=multi-user.target
+
